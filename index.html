@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adda GS Online Mock Test Engine</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MathJax CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+  <!-- html2pdf.js CDN for PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+    .drawer-open { transform: translateX(0); }
+    .drawer-closed { transform: translateX(100%); }
+    .pdf-page-break { page-break-before: always; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col min-h-screen">
+
+  <!-- ==================== PHASE 1: ENTRY SCREEN ==================== -->
+  <div id="phase1" class="flex-grow flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md border border-gray-200">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-blue-900">Adda GS Test Portal</h1>
+        <p class="text-sm text-gray-500">घटना चक्र बायोलॉजी वर्गिकी - Mock Test</p>
+      </div>
+      <form id="entryForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Full Name / पूरा नाम</label>
+          <input type="text" id="studentName" required class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="e.g. Manish Mahajan">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Roll Number / अनुक्रमांक</label>
+          <input type="text" id="rollNumber" required class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="e.g. 102938">
+        </div>
+        <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 rounded-md transition shadow">
+          Proceed / आगे बढ़ें
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== PHASE 2: INSTRUCTIONS SCREEN ==================== -->
+  <div id="phase2" class="hidden flex-grow p-4 max-w-3xl mx-auto w-full">
+    <div class="bg-white p-6 rounded-lg shadow border border-gray-200 space-y-6">
+      <div class="border-b pb-4">
+        <h2 class="text-xl font-bold text-blue-900">Candidate Information & Exam Instructions</h2>
+        <div class="flex flex-wrap justify-between mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded">
+          <p><strong>Name:</strong> <span id="dispName"></span></p>
+          <p><strong>Roll No:</strong> <span id="dispRoll"></span></p>
+          <p><strong>Total Questions:</strong> 63</p>
+          <p><strong>Time Limit:</strong> 60 Mins</p>
+        </div>
+      </div>
+      <div class="space-y-3 text-sm text-gray-700">
+        <h3 class="font-bold text-gray-900">General Policies:</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>The test contains 63 Multiple Choice Questions (MCQs).</li>
+          <li>Total time allowed is 60 minutes. An individual question timer allows ~01:12 per question.</li>
+          <li>Each question carries 1 Mark. No negative marking is applied for incorrect responses.</li>
+          <li>You can switch questions anytime using the question palette drawer.</li>
+          <li>Language toggle (Bilingual) is available on top navigation.</li>
+        </ul>
+      </div>
+      <button id="startTestBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-md shadow transition">
+        Start Test / परीक्षा शुरू करें
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== PHASE 3: LIVE MOCK TEST ENGINE ==================== -->
+  <div id="phase3" class="hidden flex-col flex-grow relative pb-28">
+    <!-- Top Navigation Bar -->
+    <header class="bg-blue-900 text-white px-4 py-3 flex justify-between items-center sticky top-0 z-20 shadow">
+      <!-- Global Timer -->
+      <div class="text-xs md:text-sm font-semibold">
+        Overall: <span id="globalTimer" class="font-mono text-green-300">01:00:00</span>
+      </div>
+      <!-- Question Isolated Timer -->
+      <div class="bg-yellow-500 text-black px-3 py-1 rounded text-xs font-bold shadow">
+        Q Timer: <span id="qTimer" class="font-mono">01:12</span>
+      </div>
+      <!-- Controls Right -->
+      <div class="flex items-center space-x-2">
+        <button id="langToggle" class="bg-blue-800 hover:bg-blue-700 text-xs px-2 py-1 rounded border border-blue-400">
+          हिंदी | Eng
+        </button>
+        <button id="openDrawer" class="bg-blue-800 hover:bg-blue-700 p-1.5 rounded">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Viewport Area -->
+    <main class="p-4 max-w-4xl mx-auto w-full flex-grow">
+      <!-- Question Number Header -->
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h2 id="questionNum" class="text-lg font-bold text-gray-800">Question 1</h2>
+        <span id="questionStatus" class="text-xs px-2 py-1 rounded bg-gray-200 font-semibold">Not Visited</span>
+      </div>
+
+      <!-- Question Text -->
+      <div id="questionText" class="text-base font-medium text-gray-900 mb-4 leading-relaxed"></div>
+
+      <!-- Matrix Match Container (If exists) -->
+      <div id="matrixContainer" class="mb-4 hidden overflow-x-auto"></div>
+
+      <!-- MCQ Options Container -->
+      <div id="optionsContainer" class="space-y-3 mb-6"></div>
+    </main>
+
+    <!-- Side Palette Drawer -->
+    <div id="paletteDrawer" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-30 transition-transform duration-300 drawer-closed flex flex-col">
+      <div class="p-4 bg-blue-900 text-white flex justify-between items-center">
+        <h3 class="font-bold">Question Palette</h3>
+        <button id="closeDrawer" class="text-white text-xl font-bold">&times;</button>
+      </div>
+      <div class="p-3 bg-gray-50 border-b grid grid-cols-2 gap-2 text-xs">
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded-full inline-block"></span> Answered</div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded-full inline-block"></span> Not Answered</div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-600 rounded-full inline-block"></span> Review</div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-gray-300 rounded-full inline-block"></span> Not Visited</div>
+      </div>
+      <div id="paletteGrid" class="p-4 grid grid-cols-5 gap-2 overflow-y-auto flex-grow"></div>
+    </div>
+
+    <!-- Fixed Bottom Mobile Navigation Controls -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-white border-t p-2 shadow-lg z-10">
+      <div class="max-w-4xl mx-auto flex flex-col gap-2">
+        <!-- Row 1 -->
+        <div class="flex gap-2">
+          <button id="btnReview" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-xs font-bold">Mark for Review & Next</button>
+          <button id="btnSaveNext" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded text-xs font-bold">Save & Next</button>
+        </div>
+        <!-- Row 2 -->
+        <div class="flex justify-between items-center gap-2 pt-1 border-t">
+          <button id="btnPrev" class="text-xs text-blue-700 font-bold px-2 py-1">Previous</button>
+          <button id="btnClear" class="text-xs text-gray-500 font-bold px-2 py-1">Clear Response</button>
+          <button id="btnSubmit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-xs font-bold">Submit Test</button>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== PHASE 4: RESULT DASHBOARD & REVISION ==================== -->
+  <div id="phase4" class="hidden flex-grow p-4 max-w-4xl mx-auto w-full">
+    <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200 mb-6">
+      <h2 class="text-2xl font-bold text-center text-blue-900 mb-4">Exam Performance Dashboard</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-6">
+        <div class="bg-blue-50 p-3 rounded">
+          <p class="text-xs text-gray-500">Score Obtained</p>
+          <p id="resScore" class="text-xl font-bold text-blue-900">0 / 63</p>
+        </div>
+        <div class="bg-green-50 p-3 rounded">
+          <p class="text-xs text-gray-500">Correct Answers</p>
+          <p id="resCorrect" class="text-xl font-bold text-green-700">0</p>
+        </div>
+        <div class="bg-red-50 p-3 rounded">
+          <p class="text-xs text-gray-500">Wrong Answers</p>
+          <p id="resWrong" class="text-xl font-bold text-red-600">0</p>
+        </div>
+        <div class="bg-purple-50 p-3 rounded">
+          <p class="text-xs text-gray-500">Percentile Index</p>
+          <p id="resPercentile" class="text-xl font-bold text-purple-700">0%</p>
+        </div>
+      </div>
+      <div class="flex justify-center gap-4">
+        <button id="downloadPdfBtn" class="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-md font-bold shadow flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          Download PDF Solution
+        </button>
+      </div>
+    </div>
+
+    <!-- Questions Detailed Solutions List -->
+    <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Detailed Solutions (Question 1 to 63)</h3>
+      <div id="solutionContainer" class="space-y-6"></div>
+    </div>
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    // 63 Hardcoded Questions Database
+    const quizData = [
+      {
+        qHi: "मकड़ी कीट से भिन्न होती है, क्योंकि मकड़ी में पाई जाती है-",
+        qEn: "Spiders differ from insects because spiders possess-",
+        optionsHi: ["आठ टांगे", "छः टांगे", "बारह टांगे", "दस टांगे"],
+        optionsEn: ["Eight legs", "Six legs", "Twelve legs", "Ten legs"],
+        ans: 0,
+        expHi: "कीटों के विपरीत मकड़ी में सिर और वक्ष जुड़े होते हैं तथा गमन हेतु आठ टांगें (चार जोड़ी) उपस्थित होती हैं।",
+        expEn: "Unlike insects, spiders have fused head and thorax (cephalothorax) and possess eight legs (four pairs) for locomotion."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा एक कीटाहारी पादप है?",
+        qEn: "Which of the following is an insectivorous plant?",
+        optionsHi: ["फ्लेम ऑफ दी फॉरेस्ट", "घटपर्णी", "रात की रानी (नाइट क्वीन)", "पैशन फ्लावर पादप"],
+        optionsEn: ["Flame of the forest", "Pitcher plant", "Night queen", "Passion flower plant"],
+        ans: 1,
+        expHi: "घटपर्णी (नेपंथीस) एक मांसाहारी पौधा है जो नाइट्रोजन की कमी पूरी करने हेतु कीटों को आकर्षित कर पचाता है।",
+        expEn: "Pitcher plant (Nepenthes) is a carnivorous plant that traps and digests insects to fulfill nitrogen deficiency."
+      },
+      {
+        qHi: "घटपर्णी के निम्नलिखित भागों में से कौन-सा एक, घट में रूपांतरित होता है?",
+        qEn: "In pitcher plant, which of the following parts gets modified into pitcher?",
+        optionsHi: ["अनुपर्ण", "पर्णवृंत", "पत्ता", "स्तंभ"],
+        optionsEn: ["Stipule", "Petiole", "Leaf", "Stem"],
+        ans: 2,
+        expHi: "घटपर्णी पौधे में पत्ती का मुख्य फलक (लैमिना) रूपांतरित होकर घड़े या कलश का आकार ले लेता है जिसमें पाचक द्रव भरा होता है।",
+        expEn: "In pitcher plants, the lamina (leaf blade) modifies to form the pitcher shape filled with digestive fluid."
+      },
+      {
+        qHi: "निम्नलिखित कथनों पर विचार कीजिए : 1. फीताकृमि उभयलिंगी हैं। 2. गोलकृमि के अलग-अलग लिंग होते हैं। 3. फाइलेरिया सूत्रकृमि से होता है। 4. गिनीकृमि एनेलिड है। इनमें से कौन-कौन से सही हैं?",
+        qEn: "Consider the statements: 1. Tapeworm is hermaphrodite. 2. Roundworm has separate sexes. 3. Filaria is caused by nematode. 4. Guinea worm is an annelid. Which are correct?",
+        optionsHi: ["1 और 2", "1, 2 और 3", "2, 3 और 4", "3 और 4"],
+        optionsEn: ["1 and 2", "1, 2 and 3", "2, 3 and 4", "3 and 4"],
+        ans: 1,
+        expHi: "फीताकृमि उभयलिंगी है, गोलकृमि एकलिंगी है और फाइलेरिया सूत्रकृमि से होता है। गिनीकृमि भी सूत्रकृमि है, एेनेलिड नहीं।",
+        expEn: "Tapeworm is hermaphrodite, roundworm has separate sexes, and filaria is caused by a nematode. Guinea worm is also a nematode, not an annelid."
+      },
+      {
+        qHi: "चट्टान पर उगने वाले पादप कहलाते हैं :",
+        qEn: "Plants growing on rocks are called:",
+        optionsHi: ["शैलोद्भिद", "लवणोद्भिद", "मरुद्भिद", "अधिपादपीय"],
+        optionsEn: ["Lithophytes", "Halophytes", "Xerophytes", "Epiphytes"],
+        ans: 0,
+        expHi: "नग्न चट्टानों की सतह और दरारों पर उगने में सक्षम वनस्पतियों को पारिस्थिकी में शैलोद्भिद (लिथोफाइट्स) कहा जाता है।",
+        expEn: "Plants capable of growing on bare rock surfaces and crevices are ecologically classified as lithophytes."
+      },
+      {
+        qHi: "निम्नलिखित उड़ने वाले जीवों में से कौन-सा पक्षी वर्ग में नहीं आता?",
+        qEn: "Which of the following flying organisms does not belong to the class of Aves (Birds)?",
+        optionsHi: ["चील", "चमगादड़", "तोता", "कौवा"],
+        optionsEn: ["Kite", "Bat", "Parrot", "Crow"],
+        ans: 1,
+        expHi: "चमगादड़ उड़ने में सक्षम होने के बावजूद पक्षी वर्ग में नहीं आता, बल्कि यह स्तनधारी (मैमेलिया) वर्ग का जीव है।",
+        expEn: "Despite being capable of flight, bats are classified under Mammalia rather than Aves."
+      },
+      {
+        qHi: "मानव-सदृश लघुतम कपि है-",
+        qEn: "The smallest human-like ape is-",
+        optionsHi: ["चिम्पैंजी", "ओरंग उटान", "गिबोन", "गोरिल्ला"],
+        optionsEn: ["Chimpanzee", "Orangutan", "Gibbon", "Gorilla"],
+        ans: 2,
+        expHi: "गिबोन हीनकपि वर्ग का सदस्य है और यह आकार में मानव-सदृश सभी कपियों में सबसे छोटा (लघुतम) होता है।",
+        expEn: "Gibbon belongs to the lesser ape family and is physically the smallest among all human-like apes."
+      },
+      {
+        qHi: "फलों का वह प्रकार जिसमें लीची को रखा जा सकता है, वह है-",
+        qEn: "The fruit type under which Lychee can be classified is-",
+        optionsHi: ["हेस्परिडियम", "नट", "ड्रूप", "एकबीजी बेरी"],
+        optionsEn: ["Hesperidium", "Nut", "Drupe", "Single-seeded berry"],
+        ans: 2,
+        expHi: "लीची को ड्रूप (अष्ठिल) फल की श्रेणी में रखा जाता है, जिसके गूदेदार एरिल के भीतर एक सख्त गुठली पाई जाती है।",
+        expEn: "Lychee is classified as a drupe fruit having a fleshy aril surrounding a hard endocarp seed."
+      },
+      {
+        qHi: "एम्फीबिया (Amphibia) बताता है-",
+        qEn: "Amphibia denotes-",
+        optionsHi: ["जल एवं स्थल दोनों पर ही रह सकने वाले पशुओं को", "बहुत तेजी से चलने वाली नावों को", "केवल जल में ही रह सकने वाले पशुओं को", "केवल स्थल पर ही रह सकने वाले पशुओं को"],
+        optionsEn: ["Animals surviving both on land and in water", "Fast moving boats", "Animals residing only in water", "Animals residing only on land"],
+        ans: 0,
+        expHi: "एम्फीबिया (उभयचर) वर्ग में वे असमतापी कशेरुकी जीव आते हैं जिनका जीवन चक्र जल तथा स्थल दोनों आवासों पर संभव होता है।",
+        expEn: "Amphibians are cold-blooded vertebrates capable of living both in terrestrial and aquatic environments."
+      },
+      {
+        qHi: "सर्पों की विषग्रंथियां किसकी समान हैं?",
+        qEn: "The poison glands of snakes are homologous to:",
+        optionsHi: ["कशेरुकी प्राणियों की लार ग्रंथियां", "मछलियों के विद्युत अंग", "स्तनियों की वसा-ग्रंथियां", "रे-मछलियों के दंश"],
+        optionsEn: ["Salivary glands of vertebrates", "Electric organs of fish", "Sebaceous glands of mammals", "Stings of ray fish"],
+        ans: 0,
+        expHi: "सांपों की विष ग्रंथियां कशेरुकी जंतुओं की पैरोटिड लार ग्रंथियों का ही रूपांतरित व विकसित रूप मानी जाती हैं।",
+        expEn: "Poison glands of snakes are modified versions of salivary (parotid) glands present in vertebrates."
+      },
+      {
+        qHi: "जुगनू होता है, एक-",
+        qEn: "Firefly is a/an-",
+        optionsHi: ["सूत्र कृमि", "कीट", "कृमि", "मोलस्क"],
+        optionsEn: ["Nematode", "Insect", "Worm", "Mollusc"],
+        ans: 1,
+        expHi: "जुगनू पंखों वाला एक कीट (कोलियोप्टेरा गण) है, जो ल्युसिफरेस एंजाइम के रासायनिक प्रभाव से प्रकाश उत्पन्न करता है।",
+        expEn: "Firefly is a winged insect of order Coleoptera that produces bioluminescence via luciferase enzyme oxidation."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन अंडे देता है और सीधे बच्चे नहीं देता?",
+        qEn: "Which of the following lays eggs and does not give direct birth to young ones?",
+        optionsHi: ["सेही", "कंगारू", "व्हेल", "एकिड्ना"],
+        optionsEn: ["Porcupine", "Kangaroo", "Whale", "Echidna"],
+        ans: 3,
+        expHi: "प्रोटोथीरिया उपवर्ग के एकिड्ना और प्लैटिपस एकमात्र ऐसे दुर्लभ स्तनधारी जीव हैं जो बच्चों के स्थान पर अंडे देते हैं।",
+        expEn: "Echidna and platypus are egg-laying mammals belonging to the subclass Prototheria."
+      },
+      {
+        qHi: "फलीदार पादपों की जड़ों में उपस्थित गांठों में पाए जाने वाले नत्रजन स्थिरीकरण जीवाणु हैं-",
+        qEn: "Nitrogen-fixing bacteria found in root nodules of leguminous plants are-",
+        optionsHi: ["पराश्रयी", "प्रोटोपघटनी", "सहजीवी", "मृतोपजीवी"],
+        optionsEn: ["Parasitic", "Saprophytic", "Symbiotic", "Epiphytic"],
+        ans: 2,
+        expHi: "दलहनी पौधों की जड़ ग्रंथियों में रहने वाला राइजोबियम जीवाणु सहजीवी के रूप में नाइट्रोजन का स्थिरीकरण करता है।",
+        expEn: "Rhizobium bacteria reside in legume root nodules, performing nitrogen fixation in a symbiotic association."
+      },
+      {
+        qHi: "व्हेल निम्न वर्गों में से किस वर्ग का प्राणी है?",
+        qEn: "To which class of animals does the Whale belong?",
+        optionsHi: ["उभयचर", "मत्स्य", "स्तनपायी", "सरीसृप"],
+        optionsEn: ["Amphibian", "Pisces", "Mammal", "Reptile"],
+        ans: 2,
+        expHi: "व्हेल जलीय जीव होते हुए भी स्तनपायी वर्ग का सदस्य है क्योंकि यह फेफड़ों से सांस लेता है तथा बच्चे पैदा करता है।",
+        expEn: "Whales are aquatic mammals that breathe air through lungs and give direct birth to live offspring."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन मछली नहीं है?",
+        qEn: "Which of the following is NOT a true fish?",
+        optionsHi: ["सा फिश", "स्टार फिश", "पाइप फिश", "गिटार फिश"],
+        optionsEn: ["Saw fish", "Star fish", "Pipe fish", "Guitar fish"],
+        ans: 1,
+        expHi: "स्टार फिश संघ इकाइनोडर्मेटा का समुद्री जीव है, यह वास्तविक कशेरुकी मछली नहीं है।",
+        expEn: "Starfish is an echinoderm marine invertebrate, not a true vertebrate fish."
+      },
+      {
+        qHi: "नेपेंथीस खासियाना (घटपर्णी) नामक दुर्लभ एवं आपातीय पौधा पाया जाता है-",
+        qEn: "The rare pitcher plant 'Nepenthes khasiana' is found in-",
+        optionsHi: ["मध्य प्रदेश में", "हिमाचल प्रदेश में", "उत्तर प्रदेश में", "मेघालय में"],
+        optionsEn: ["Madhya Pradesh", "Himachal Pradesh", "Uttar Pradesh", "Meghalaya"],
+        ans: 3,
+        expHi: "नेपेंथीस खासियाना भारत के पूर्वोत्तर राज्य मेघालय की गारो, खासी एवं जयंतिया पहाड़ियों में पाया जाता है।",
+        expEn: "Nepenthes khasiana is endemic to the Garo, Khasi, and Jaintia hills of Meghalaya state in India."
+      },
+      {
+        qHi: "निम्न में कौन-सा गुण मनुष्य को अन्य सभी वानर गुणों से पृथक करता है?",
+        qEn: "Which trait distinguishes humans from all other ape species?",
+        optionsHi: ["ठोढ़ी का बाहर निकलना", "विपरित अंगूठे", "घ्राण शक्ति का अल्पविकसित होना", "जानने की इच्छा प्रकट करना"],
+        optionsEn: ["Protruding chin", "Opposable thumbs", "Rudimentary olfaction", "Desire to learn and inquire"],
+        ans: 3,
+        expHi: "मनुष्य में उच्च बौद्धिक चिंतन, जानने की प्रबल इच्छा और स्पष्ट भाषा में संवाद की क्षमता होती है।",
+        expEn: "Curiosity, thirst for knowledge, and abstract reasoning distinguish humans from apes."
+      },
+      {
+        qHi: "निम्नलिखित में से किस जीव का रक्त सफेद होता है?",
+        qEn: "Which of the following organisms has white blood?",
+        optionsHi: ["तिलचट्टा", "छिपकली", "घरेलू खटमल", "मच्छर"],
+        optionsEn: ["Cockroach", "Lizard", "Bed bug", "Mosquito"],
+        ans: 0,
+        expHi: "तिलचट्टे के रक्त में हीमोग्लोबिन अनुपस्थित होता है, जिससे इसका परिसंचारी रक्त (हीमोलिमफ) रंगहीन या सफेद दिखता है।",
+        expEn: "Cockroaches lack hemoglobin pigment in their hemolymph, giving their blood a colorless/white appearance."
+      },
+      {
+        qHi: "संख्या की दृष्टि से अब तक ढूंढे हुए और पहचाने हुए जीवों में सबसे अधिक संख्या है-",
+        qEn: "Numerically, among all identified living species, the largest group belongs to-",
+        optionsHi: ["कीटों की", "कवकों की", "जीवाणुओं की", "पादपों की"],
+        optionsEn: ["Insects", "Fungi", "Bacteria", "Plants"],
+        ans: 0,
+        expHi: "जीव जगत में सर्वाधिक जातियां कीटों (आर्थोपोडा) की हैं, जिनकी ज्ञात संख्या 10 लाख से अधिक है।",
+        expEn: "Insects (phylum Arthropoda) represent the vast majority of described living species on Earth."
+      },
+      {
+        qHi: "1. जाहक (हेज्हॉग) 2. शैलमूषक (मारमॉट) 3. वज्रशल्क (पैंगोलिन) - कौन-से जीव परभक्षियों से रक्षा हेतु स्वयं को लपेट लेते हैं?",
+        qEn: "1. Hedgehog 2. Marmot 3. Pangolin - Which of these roll up into a ball to protect against predators?",
+        optionsHi: ["केवल 3", "केवल 2", "1 और 3", "1 और 2"],
+        optionsEn: ["Only 3", "Only 2", "1 and 3", "1 and 2"],
+        ans: 2,
+        expHi: "हेज्हॉग और पैंगोलिन दोनों ही खतरे के समय अपने शरीर को गेंद की तरह गोल लपेटकर अपने सुभेद्य अंगों की रक्षा करते हैं।",
+        expEn: "Hedgehogs and pangolins roll themselves into a protective ball when threatened by predators."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा रूपांतरित स्तंभ (कंद) है?",
+        qEn: "Which of the following is a modified stem (tuber)?",
+        optionsHi: ["गाजर", "नारियल", "आलू", "शकरकंद"],
+        optionsEn: ["Carrot", "Coconut", "Potato", "Sweet Potato"],
+        ans: 2,
+        expHi: "आलू एक भूमिगत रूपांतरित तना है जिसे कंद (ट्यूबर) कहते हैं, जिसकी आँखें कलिकाएं रखती हैं।",
+        expEn: "Potato is a underground modified stem called a tuber carrying vegetative buds (eyes)."
+      },
+      {
+        qHi: "निम्न में से कौन एक वास्तविक मीन (मछली) है?",
+        qEn: "Which of the following is a true fish?",
+        optionsHi: ["रजत मीन", "जेली फिश", "कैट फिश", "क्रे फिश"],
+        optionsEn: ["Silverfish", "Jellyfish", "Catfish", "Crayfish"],
+        ans: 2,
+        expHi: "कैट फिश एक वास्तविक कशेरुकी मीन है; जबकि रजत मीन कीट है और जेलीफिश सीलेंट्रेटा है।",
+        expEn: "Catfish is a true bony vertebrate fish whereas silverfish is an insect and jellyfish is a cnidarian."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा युग्म सही सुमेलित नहीं है?",
+        qEn: "Which of the following pairs is NOT correctly matched?",
+        optionsHi: ["ऑर्किड — अधिपादप", "घटपर्णी — जलोद्भिद", "चंदन — जड़ परजीवी", "अमरबेल — तना परजीवी"],
+        optionsEn: ["Orchid — Epiphyte", "Pitcher Plant — Hydrophyte", "Sandalwood — Root Parasite", "Cuscuta — Stem Parasite"],
+        ans: 1,
+        expHi: "घटपर्णी दलदली व नाइट्रोजन न्यून भूमि में उगने वाला कीटभक्षी पादप है, यह जलोद्भिद (पूर्ण जलीय पौधा) नहीं है।",
+        expEn: "Pitcher plant is an insectivorous plant growing in nitrogen-poor marshy soil, not a hydrophyte."
+      },
+      {
+        qHi: "नृशंस प्राणी कौन-सा है?",
+        qEn: "Which of the following is considered a ruthless/predatory semi-aquatic animal (Otter)?",
+        optionsHi: ["पेंगुइन", "ऑटर", "व्हेल", "कछुआ"],
+        optionsEn: ["Penguin", "Otter", "Whale", "Turtle"],
+        ans: 1,
+        expHi: "ऑटर (ऊदबिलाव) एक अर्ध-जलीय मांसाहारी स्तनपायी प्राणी है।",
+        expEn: "Otter is a semi-aquatic carnivorous mammal."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा कथन सही नहीं है?",
+        qEn: "Which of the following statements is NOT correct?",
+        optionsHi: ["उपास्थिसम मछलियों में निषेचन आंतरिक होता है।", "सभी इकाइनोडर्म सजीव प्रजक होते हैं।", "गोलकृमि में कोई परिसंचरण तंत्र नहीं होता।", "अस्थिल मछलियों में वाताशय आमतौर से विद्यमान होता है।"],
+        optionsEn: ["Fertilization is internal in cartilaginous fish.", "All echinoderms are viviparous.", "Roundworms lack a circulatory system.", "Air bladder is usually present in bony fish."],
+        ans: 1,
+        expHi: "सभी इकाइनोडर्म सजीव प्रजक (जरायुज) नहीं होते; इनमें अधिकांश अंडे देने वाले समुद्री जीव होते हैं।",
+        expEn: "Echinoderms are mostly oviparous marine organisms; they are not all viviparous."
+      },
+      {
+        qHi: "अदरक तना है जड़ नहीं, क्योंकि-",
+        qEn: "Ginger is a stem and not a root because-",
+        optionsHi: ["इसमें नोड और इंटर्नोड होते हैं।", "इसमें क्लोरोफिल की कमी है।", "यह खाद्य सामग्री को संग्रहीत करता है।", "यह मिट्टी में क्षैतिज रूप से बढ़ता है।"],
+        optionsEn: ["It possesses nodes and internodes.", "It lacks chlorophyll.", "It stores food materials.", "It grows horizontally in soil."],
+        ans: 0,
+        expHi: "नोड्स और इंटरनोड्स का पाया जाना तने का मुख्य वानस्पतिक लक्षण है, जो अदरक में मौजूद होता है।",
+        expEn: "Presence of distinct nodes and internodes is a characteristic structural feature of stems."
+      },
+      {
+        qHi: "कड़कनाथ एक किस्म है-",
+        qEn: "'Kadaknath' is a breed of-",
+        optionsHi: ["सांड की", "भैंसे की", "बकरे की", "मुर्गों की"],
+        optionsEn: ["Bull", "Buffalo", "Goat", "Poultry / Chicken"],
+        ans: 3,
+        expHi: "कड़कनाथ मध्य प्रदेश का प्रसिद्ध देशी मुर्गा है, जिसका मांस, त्वचा व रक्त गहरा काला होता है।",
+        expEn: "Kadaknath is a famous black-fleshed chicken breed native to Madhya Pradesh, India."
+      },
+      {
+        qHi: "जब चींटियां काटती हैं, तो वे अंतःक्षेपित करती हैं-",
+        qEn: "When ants bite, they inject-",
+        optionsHi: ["ग्लेशल एसिटिक अम्ल", "स्टिएरिक अम्ल", "फॉर्मिक अम्ल", "मेथेनॉल"],
+        optionsEn: ["Glacial acetic acid", "Stearic acid", "Formic acid", "Methanol"],
+        ans: 2,
+        expHi: "चींटियों के डंक में फॉर्मिक अम्ल (मेथेनोइक अम्ल) होता है, जिससे त्वचा में जलन और दर्द होता है।",
+        expEn: "Ant venom contains formic acid (methanoic acid) causing burning irritation on biting."
+      },
+      {
+        qHi: "निम्न प्रजातियों में से कौन-सी दांत वाली व्हेलों में विशालतम है?",
+        qEn: "Which is the largest species among toothed whales?",
+        optionsHi: ["स्पर्म व्हेल", "हम्पबैक व्हेल", "ब्लू व्हेल", "फिनबैक व्हेल"],
+        optionsEn: ["Sperm Whale", "Humpback Whale", "Blue Whale", "Finback Whale"],
+        ans: 0,
+        expHi: "स्पर्म व्हेल दांतों वाली व्हेलों में सबसे विशालतम प्रजाति है, जिसकी लंबाई 50-55 फीट तक हो सकती है।",
+        expEn: "Sperm whale is the largest member of the toothed whale group."
+      },
+      {
+        qHi: "टिक और माइट वास्तव में होते हैं-",
+        qEn: "Ticks and mites are actually-",
+        optionsHi: ["क्रस्टेशियाई", "कीट", "बहुपाद", "मकड़ी-वंशी"],
+        optionsEn: ["Crustaceans", "Insects", "Myriapods", "Arachnids"],
+        ans: 3,
+        expHi: "टिक और माइट आठ पैरों वाले जीव हैं जो ऐरेक्निडा (मकड़ी-वंशी) वर्ग से संबंधित होते हैं।",
+        expEn: "Ticks and mites belong to class Arachnida having eight legs."
+      },
+      {
+        qHi: "निम्न अधोभूमि उत्पादित सब्जियों में से कौन-सी एक रूपांतरित जड़ है?",
+        qEn: "Which of the following underground vegetables is a modified root?",
+        optionsHi: ["जिमीकंद", "बन्डा", "आलू", "शकरकंद"],
+        optionsEn: ["Yam", "Banda", "Potato", "Sweet Potato"],
+        ans: 3,
+        expHi: "शकरकंद भोजन संग्रह करने वाली एक रूपांतरित अपस्थानिक जड़ है।",
+        expEn: "Sweet potato is a modified adventitious tuberous root storing starch."
+      },
+      {
+        qHi: "सबसे बड़ा अकशेरुकी है-",
+        qEn: "The largest invertebrate is-",
+        optionsHi: ["ऑक्टोपस", "कोरल", "जेलीफिश", "स्कविड"],
+        optionsEn: ["Octopus", "Coral", "Jellyfish", "Squid"],
+        ans: 3,
+        expHi: "कोलोसल स्क्विड विश्व का सबसे बड़ा अकशेरुकी प्राणी है, जिसकी लंबाई 12-14 मीटर हो सकती है।",
+        expEn: "Colossal squid is recognized as the largest invertebrate species."
+      },
+      {
+        qHi: "निम्नलिखित में से किस जंतु में खुर नहीं पाए जाते हैं?",
+        qEn: "Which of the following animals does NOT have hooves?",
+        optionsHi: ["गीदड़", "जेबरा", "घोड़ा", "हिरण"],
+        optionsEn: ["Jackal", "Zebra", "Horse", "Deer"],
+        ans: 0,
+        expHi: "गीदड़ कैनाइडी परिवार का सदस्य है जिसके पैरों में खुर के स्थान पर नाखूनयुक्त पंजे होते हैं।",
+        expEn: "Jackals belong to the Canidae family having clawed padded paws instead of hooves."
+      },
+      {
+        qHi: "कवकों और उच्चतर पादपों की जड़ों के बीच उपयोगी सहजीवी संबंध कहलाता है-",
+        qEn: "The symbiotic association between fungi and roots of higher plants is-",
+        optionsHi: ["प्रवाल मूल", "जैव उर्वरक", "लाइकेन", "कवकमूल (माइकोराइजा)"],
+        optionsEn: ["Coralloid root", "Biofertilizer", "Lichen", "Mycorrhiza"],
+        ans: 3,
+        expHi: "कवकमूल (माइकोराइजा) कवक तथा उच्च श्रेणी के पादपों की जड़ों के बीच का सहजीवन है।",
+        expEn: "Mycorrhiza is a mutualistic symbiotic association between fungi and higher plant roots."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा जीव निस्यंदक भोजी (फिल्टर फीडर) है?",
+        qEn: "Which of the following organisms is a filter feeder?",
+        optionsHi: ["बरुथी", "सीप (ऑयस्टर)", "हवासिल", "अशल्क मीन"],
+        optionsEn: ["Mite", "Oyster", "Pelican", "Catfish"],
+        ans: 1,
+        expHi: "सीप (ऑयस्टर) जल को अपने गिल्स से गुजारकर सूक्ष्म पोषक कणों को छानकर ग्रहण करता है।",
+        expEn: "Oysters are filter feeders that strain microscopic organic particles from water through their gills."
+      },
+      {
+        qHi: "निम्नलिखित में से सील (Seal) किस जाति का है?",
+        qEn: "Seal belongs to which class of organisms?",
+        optionsHi: ["मछली", "सरीसृप", "पक्षी", "स्तनपायी"],
+        optionsEn: ["Fish", "Reptile", "Bird", "Mammal"],
+        ans: 3,
+        expHi: "सील एक जलीय मांसाहारी स्तनपायी (मैमल) जीव है।",
+        expEn: "Seal is a marine carnivorous mammal belonging to the order Carnivora."
+      },
+      {
+        qHi: "निम्नलिखित पादपों में से किसका संग्रह अंग तना नहीं है?",
+        qEn: "In which of the following plants is the storage organ NOT a stem?",
+        optionsHi: ["अदरक का", "गन्ना का", "शकरकंद का", "आलू का"],
+        optionsEn: ["Ginger", "Sugarcane", "Sweet potato", "Potato"],
+        ans: 2,
+        expHi: "गन्ना, अदरक और आलू में खाद्य पदार्थ तने में संचित होता है, जबकि शकरकंद का संचय अंग जड़ है।",
+        expEn: "Sweet potato stores nutrients in its modified root, whereas others store in stem."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा एक कपि नहीं है?",
+        qEn: "Which of the following is NOT an ape?",
+        optionsHi: ["लंगूर", "गिबोन", "गोरिल्ला", "ओरंग उटान"],
+        optionsEn: ["Langur", "Gibbon", "Gorilla", "Orangutan"],
+        ans: 0,
+        expHi: "गिबोन, गोरिल्ला और ओरंग उटान कपि हैं, जबकि लंगूर वानर (मंकी) श्रेणी में आता है।",
+        expEn: "Langurs are classified as monkeys, whereas gibbon, gorilla, and orangutan are apes."
+      },
+      {
+        qHi: "नील गाय निम्नलिखित कुल में आती हैं:",
+        qEn: "Nilgai belongs to which family?",
+        optionsHi: ["गाय", "भेड़", "हिरन", "बकरी"],
+        optionsEn: ["Cow", "Sheep", "Deer / Bovidae Antelope", "Goat"],
+        ans: 2,
+        expHi: "नीलगाय भारत में पाई जाने वाली सबसे विशाल मृग प्रजाति है, जो बोविडे कुल में आती है।",
+        expEn: "Nilgai is the largest Asian antelope species belonging to the family Bovidae."
+      },
+      {
+        qHi: "गर्म रुधिर वाले जंतु वे होते हैं, जो अपने शरीर के तापक्रम को-",
+        qEn: "Warm-blooded animals maintain their body temperature:",
+        optionsHi: ["वातावरण के तापक्रम को बराबर बनाए रखते हैं।", "वातावरण के तापक्रम से ऊंचा रखते हैं।", "वातावरण के तापक्रम से नीचा रखते हैं।", "हमेशा एक-सा बनाए रखते हैं।"],
+        optionsEn: ["Equal to environment", "Higher than environment", "Lower than environment", "Constant always"],
+        ans: 3,
+        expHi: "समतापी या गर्म रुधिर वाले जंतुओं का आंतरिक तापमान वातावरण के बदलावों से अप्रभावित रहकर स्थिर रहता है।",
+        expEn: "Warm-blooded (homeothermic) animals regulate a constant internal body temperature regardless of ambient environment."
+      },
+      {
+        qHi: "1. समुद्री गाय 2. समुद्री घोड़ा 3. समुद्री सिंह - उपर्युक्त में से कौन-सा/से स्तनधारी है/हैं?",
+        qEn: "1. Sea Cow 2. Sea Horse 3. Sea Lion - Which of these are mammals?",
+        optionsHi: ["केवल 1", "1, 2 और 3", "केवल 1 और 3", "केवल 2 और 3"],
+        optionsEn: ["Only 1", "1, 2 and 3", "Only 1 and 3", "Only 2 and 3"],
+        ans: 2,
+        expHi: "समुद्री गाय और समुद्री सिंह स्तनधारी हैं, जबकि समुद्री घोड़ा (हिप्पोकैम्पस) एक वास्तविक मछली है।",
+        expEn: "Sea Cow and Sea Lion are marine mammals, while Sea Horse is a bony fish."
+      },
+      {
+        qHi: "निम्न को सुमेलित कीजिए: A. प्रकंद 1. लहसुन, B. स्तंभ कंद 2. जिमीकंद, C. शल्क कंद 3. अदरक, D. घनकंद 4. आलू",
+        qEn: "Match: A. Rhizome 1. Garlic, B. Tuber 2. Yam, C. Bulb 3. Ginger, D. Corm 4. Potato",
+        optionsHi: ["A-1, B-2, C-3, D-4", "A-3, B-4, C-2, D-1", "A-3, B-1, C-2, D-4", "A-3, B-4, C-1, D-2"],
+        optionsEn: ["A-1, B-2, C-3, D-4", "A-3, B-4, C-2, D-1", "A-3, B-1, C-2, D-4", "A-3, B-4, C-1, D-2"],
+        ans: 3,
+        expHi: "अदरक प्रकंद (A-3), आलू स्तंभ कंद (B-4), लहसुन शल्क कंद (C-1) तथा जिमीकंद घनकंद (D-2) है।",
+        expEn: "Ginger is Rhizome (A-3), Potato is Tuber (B-4), Garlic is Bulb (C-1), Yam is Corm (D-2)."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-सा एक जीव, अन्य तीन जीवों के वर्ग का नहीं है?",
+        qEn: "Which one of the following organisms does NOT belong to the same class as the other three?",
+        optionsHi: ["बरुथी", "केकड़ा", "मकड़ी", "बिच्छू"],
+        optionsEn: ["Mite", "Crab", "Spider", "Scorpion"],
+        ans: 1,
+        expHi: "बरुथी, बिच्छू और मकड़ी ऐरेक्निडा वर्ग के जीव हैं, जबकि केकड़ा क्रस्टेशिया वर्ग का सदस्य है।",
+        expEn: "Mites, spiders, and scorpions are Arachnids, whereas crab belongs to Crustacea."
+      },
+      {
+        qHi: "निम्न में से कौन-सा तना है?",
+        qEn: "Which of the following is a stem?",
+        optionsHi: ["अदरक", "गाजर", "शकरकंद", "शलजम"],
+        optionsEn: ["Ginger", "Carrot", "Sweet potato", "Turnip"],
+        ans: 0,
+        expHi: "अदरक एक रूपांतरित भूमिगत तना (प्रकंद) है, जबकि गाजर, शकरकंद और शलजम जड़ें हैं।",
+        expEn: "Ginger is a modified underground stem (rhizome) while others are modified roots."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन सही रूप में सुमेलित नहीं है?",
+        qEn: "Which of the following is NOT correctly matched?",
+        optionsHi: ["घटपर्णी — परजीवी आवृत्तबीजी", "कैसीन — दुग्ध प्रोटीन", "एलोवेरा — आवृत्तबीजी", "यीस्ट — किण्वन"],
+        optionsEn: ["Pitcher Plant — Parasitic Angiosperm", "Casein — Milk Protein", "Aloe vera — Angiosperm", "Yeast — Fermentation"],
+        ans: 0,
+        expHi: "घटपर्णी स्वपोषी प्रकाश-संश्लेषी कीटभक्षी पौधा है, यह परजीवी नहीं है।",
+        expEn: "Pitcher plant is an autotrophic insectivorous plant, not a parasitic angiosperm."
+      },
+      {
+        qHi: "निम्न में से कौन-सी वास्तविक रूप से मछली है?",
+        qEn: "Which of the following is a true fish?",
+        optionsHi: ["हैगफिश", "समुद्री घोड़ा", "जेलीफिश", "स्टारफिश"],
+        optionsEn: ["Hagfish", "Seahorse", "Jellyfish", "Starfish"],
+        ans: 1,
+        expHi: "समुद्री घोड़ा (हिप्पोकैम्पस) एक वास्तविक अस्थिल मछली है।",
+        expEn: "Seahorse (Hippocampus) is a true bony fish."
+      },
+      {
+        qHi: "मटर पौधा है-",
+        qEn: "Pea plant is a/an-",
+        optionsHi: ["शाक", "झाड़ी", "वृक्ष", "पुष्प"],
+        optionsEn: ["Herb", "Shrub", "Tree", "Flower"],
+        ans: 0,
+        expHi: "मटर का पौधा एकवर्षीय, कमजोर तने वाला द्विबीजपत्रीय शाक (हर्ब) होता है।",
+        expEn: "Pea plant is an annual herbaceous climbing plant."
+      },
+      {
+        qHi: "कौन-सा जानवर बिना पानी पिए सबसे लंबी अवधि तक रह सकता है तथा ठोस मूत्र उत्सर्जित करता है?",
+        qEn: "Which animal can survive longest without drinking water and excretes solid urine?",
+        optionsHi: ["कंगारू चूहा", "कंगारू", "ऊंट", "जिराफ"],
+        optionsEn: ["Kangaroo rat", "Kangaroo", "Camel", "Giraffe"],
+        ans: 0,
+        expHi: "कंगारू चूहा अपने वृक्क की विशेष जल-अवशोषण क्षमता के कारण बिना पानी पिए रह सकता है और ठोस मूत्र विसर्जित करता है।",
+        expEn: "Kangaroo rat survives without drinking water by hyper-concentrating urine into a solid/semi-solid state."
+      },
+      {
+        qHi: "सबसे बड़ा स्तनपायी कौन-सा है?",
+        qEn: "Which is the largest mammal on Earth?",
+        optionsHi: ["दरियाई घोड़ा", "अफ्रीकी हाथी", "ध्रुवीय भालू", "व्हेल मछली"],
+        optionsEn: ["Hippopotamus", "African Elephant", "Polar Bear", "Blue Whale"],
+        ans: 3,
+        expHi: "ब्लू व्हेल पृथ्वी पर पाया जाने वाला सबसे विशालकाय स्तनपायी जीव है।",
+        expEn: "Blue Whale is the largest mammal existing on Earth."
+      },
+      {
+        qHi: "मकड़ियों द्वारा उत्पादित रेशम कहलाता है-",
+        qEn: "Silk produced by spiders is called-",
+        optionsHi: ["मूंगा रेशम", "टसर रेशम", "गोसामर रेशम", "अहिंसा रेशम"],
+        optionsEn: ["Muga silk", "Tussar silk", "Gossamer silk", "Ahimsa silk"],
+        ans: 2,
+        expHi: "मकड़ियों द्वारा अपने जाले निर्माण हेतु स्रावित विशेष रेशम को गोसामर रेशम कहते हैं।",
+        expEn: "Spider silk spun for webs is specifically termed Gossamer silk."
+      },
+      {
+        qHi: "सांप के जहरीले विषदंत होते हैं, जो रूपांतरित रूप हैं-",
+        qEn: "The venomous fangs of snakes are modified-",
+        optionsHi: ["श्वानीय दंत के", "चिबुकास्थि दंत के", "तालु दंत के", "जंभिका दंत के"],
+        optionsEn: ["Canine teeth", "Mandibular teeth", "Palatine teeth", "Maxillary teeth"],
+        ans: 3,
+        expHi: "विषैले सर्पों के विषदंत वास्तव में उनकी ऊपरी जबड़े की मैक्सिलरी (जंभिका) हड्डियों के रूपांतरित दंत होते हैं।",
+        expEn: "Fangs of venomous snakes are modified maxillary teeth attached to the upper jaw."
+      },
+      {
+        qHi: "व्हाइट लेग हार्न एक किस्म है :",
+        qEn: "'White Leghorn' is a breed of:",
+        optionsHi: ["तोतों की", "कुक्कुटों की", "उलूकों की", "मोरों की"],
+        optionsEn: ["Parrots", "Poultry / Chickens", "Owls", "Peacocks"],
+        ans: 1,
+        expHi: "व्हाइट लेग हार्न अधिक अंडे देने की क्षमता के लिए प्रसिद्ध मुर्गियों (कुक्कुट) की एक विदेशी नस्ल है।",
+        expEn: "White Leghorn is a famous breed of chicken known for high egg production."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन-से प्राणी अपनी आंत्र में जल का संग्रह कर लेते हैं?",
+        qEn: "Which of the following animals store water in their intestine/stomach?",
+        optionsHi: ["ऊंट", "यूरोमैस्टिक्स", "जेबरा", "मोलॉक"],
+        optionsEn: ["Camel", "Uromastyx", "Zebra", "Moloch"],
+        ans: 0,
+        expHi: "मरुस्थलीय अनुकूलन के तहत ऊंट अपनी आंत्र/अमाशय में जल संचित रखता है।",
+        expEn: "Camels possess physiological adaptations to store water in their digestive tract."
+      },
+      {
+        qHi: "कथन (A): अमीबा, विभंजन द्वारा जनन करता है। कारण (R): सभी एक-कोशिकीय जीव अलैंगिक विधियों से जनन करते हैं।",
+        qEn: "Assertion (A): Amoeba reproduces by fission. Reason (R): All unicellular organisms reproduce by asexual methods.",
+        optionsHi: ["(A) और (R) दोनों सही हैं और (R), (A) का सही स्पष्टीकरण है।", "(A) और (R) दोनों सही हैं, परंतु (R), (A) का सही स्पष्टीकरण नहीं है।", "(A) गलत है, परंतु (R) सही है।", "(A) सही है, परंतु (R) गलत है।"],
+        optionsEn: ["Both A and R are true and R is correct explanation of A", "Both A and R are true but R is NOT correct explanation", "A is false but R is true", "A is true but R is false"],
+        ans: 0,
+        expHi: "अमीबा एककोशिकीय जीव है जो द्विखंडन (अलैंगिक) द्वारा जनन करता है तथा सभी एककोशिकीय जीव अलैंगिक जनन दर्शाते हैं।",
+        expEn: "Amoeba is a unicellular organism reproducing via binary fission; all single-celled organisms undergo asexual reproduction."
+      },
+      {
+        qHi: "निम्नलिखित में से कौन एक मछली है?",
+        qEn: "Which of the following is a true fish?",
+        optionsHi: ["समुद्री बाघ", "समुद्री गाय", "समुद्री घोड़ा", "समुद्री खीरा"],
+        optionsEn: ["Sea Tiger", "Sea Cow", "Sea Horse", "Sea Cucumber"],
+        ans: 2,
+        expHi: "समुद्री घोड़ा (हिप्पोकैम्पस) वास्तविक मछली है।",
+        expEn: "Sea horse is a true bony fish."
+      },
+      {
+        qHi: "पौधे के कौन-से भाग से हल्दी प्राप्त होती है तथा इसका खाने लायक हिस्सा कौन-सा है?",
+        qEn: "Which part of the plant yields turmeric and forms its edible portion?",
+        optionsHi: ["प्रकंद (रूपांतरित तना)", "फल", "पुष्प", "जड़"],
+        optionsEn: ["Rhizome (Modified stem)", "Fruit", "Flower", "Root"],
+        ans: 0,
+        expHi: "हल्दी का उपयोगी व खाद्य भाग भूमिगत रूपांतरित तना अर्थात प्रकंद (राइजोम) होता है।",
+        expEn: "Turmeric is obtained from the underground modified stem known as rhizome."
+      },
+      {
+        qHi: "ऑक्टोपस-",
+        qEn: "An Octopus is a/an-",
+        optionsHi: ["एक मृदुकवची (मोलस्क) है।", "एक हेमीकॉर्डिनेट है।", "एक संधिपाद है।", "शूलचर्मी है।"],
+        optionsEn: ["Mollusc", "Hemichordate", "Arthropod", "Echinoderm"],
+        ans: 0,
+        expHi: "ऑक्टोपस सिफैलोपोड वर्ग का एक कोमल शरीर वाला मृदुकवची (मोलस्क) जीव है।",
+        expEn: "Octopus is a soft-bodied cephalopod belonging to phylum Mollusca."
+      },
+      {
+        qHi: "मच्छरों के बारे में कथनों पर विचार कीजिए : 1. केवल नर रक्त चूसते हैं। 2. केवल मादा रक्त चूसती हैं। 3. मादा पौधों का रस चूसती हैं। 4. नर के डैने बड़े होते हैं। 5. मादा के डैने बड़े होते हैं।",
+        qEn: "Consider mosquito statements: 1. Only males suck blood. 2. Only females suck blood. 3. Females feed on sap. 4. Males have larger wings. 5. Females have larger wings.",
+        optionsHi: ["केवल 1 और 2 सही हैं।", "केवल 2 और 4 सही हैं।", "केवल 3 और 5 सही हैं।", "केवल 2 और 5 सही हैं।"],
+        optionsEn: ["Only 1 and 2 correct", "Only 2 and 4 correct", "Only 3 and 5 correct", "Only 2 and 5 correct"],
+        ans: 3,
+        expHi: "अंडों के पोषण हेतु केवल मादा मच्छर रक्त चूसती है तथा मादा का आकार व डैने नर से बड़े होते हैं।",
+        expEn: "Only female mosquitoes bite/suck blood for egg development and females have larger wings than males."
+      },
+      {
+        qHi: "निम्नांकित में कौन-सा कीट नहीं है?",
+        qEn: "Which of the following is NOT an insect?",
+        optionsHi: ["मकड़ी", "घरेलू मक्खी", "खटमल", "मच्छर"],
+        optionsEn: ["Spider", "Housefly", "Bed bug", "Mosquito"],
+        ans: 0,
+        expHi: "कीटों में 6 टांगें होती हैं, जबकि मकड़ी ऐरेक्निडा वर्ग की है और इसमें 8 टांगें (4 जोड़ी) होती हैं।",
+        expEn: "Insects have 6 legs while spiders belong to Arachnida having 8 legs."
+      },
+      {
+        qHi: "लौंग पौधे के निम्नलिखित में से किस भाग से प्राप्त होते हैं?",
+        qEn: "Cloves are obtained from which part of the plant?",
+        optionsHi: ["शुष्क पुष्प कली (बंद कलियां)", "जड़ की गांठें", "तने की गांठें", "पत्तियां"],
+        optionsEn: ["Dried flower buds", "Root nodules", "Stem nodes", "Leaves"],
+        ans: 0,
+        expHi: "लौंग सदाबहार वृक्ष की अप्रस्फुटित, सूखी हुई पुष्प कलियां होती हैं।",
+        expEn: "Cloves are the dried unopened aromatic flower buds of the tree Syzygium aromaticum."
+      },
+      {
+        qHi: "उड़ने वाला स्तनपायी है :",
+        qEn: "The flying mammal is:",
+        optionsHi: ["शुतुरमुर्ग", "जगुआर", "पेलिकन", "चमगादड़"],
+        optionsEn: ["Ostrich", "Jaguar", "Pelican", "Bat"],
+        ans: 3,
+        expHi: "चमगादड़ पूर्णतः उड़ने की क्षमता रखने वाला एकमात्र निशाचर स्तनधारी प्राणी है।",
+        expEn: "Bat is the only mammal capable of true sustained flight."
+      },
+      {
+        qHi: "निम्नलिखित में से किस ग्रुप के जंतु प्रायः रात्रिचर (Nocturnal) होते हैं?",
+        qEn: "Which group of animals are predominantly nocturnal?",
+        optionsHi: ["घरेलू मक्खी, खटमल, तोता", "मच्छर, गौरैया, हिरन", "मच्छर, चमगादड़, उल्लू", "उल्लू, चमगादड़, कुत्ता"],
+        optionsEn: ["Housefly, Bedbug, Parrot", "Mosquito, Sparrow, Deer", "Mosquito, Bat, Owl", "Owl, Bat, Dog"],
+        ans: 2,
+        expHi: "मच्छर, चमगादड़ और उल्लू दिन में विश्राम करते हैं और रात्रि में सक्रिय रहते हैं।",
+        expEn: "Mosquitoes, bats, and owls are active primarily during nighttime (nocturnal)."
+      },
+      {
+        qHi: "डॉल्फिन वर्गीकृत किए जाते हैं-",
+        qEn: "Dolphins are classified under-",
+        optionsHi: ["स्तनी में", "उभयचर में", "मत्स्य में", "सरीसृप में"],
+        optionsEn: ["Mammals", "Amphibians", "Pisces / Fish", "Reptiles"],
+        ans: 0,
+        expHi: "डॉल्फिन अत्यधिक बुद्धिमान जलीय जीव है, जिसे स्तनपायी (मैमेलिया) वर्ग में रखा गया है।",
+        expEn: "Dolphins are aquatic mammals belonging to the order Cetacea."
+      }
+    ];
+
+    // State Variables
+    let currentLang = 'hi'; // 'hi' or 'en'
+    let currentQIndex = 0;
+    let studentInfo = { name: '', roll: '' };
+    let userAnswers = new Array(63).fill(null);
+    let userStatus = new Array(63).fill('unvisited'); // 'unvisited', 'not_answered', 'answered', 'review'
+    
+    let globalTimeLeft = 3600; // 60 minutes
+    let qTimeLeft = 72; // 1 minute 12 seconds
+    let globalTimerInterval = null;
+    let qTimerInterval = null;
+
+    // Phase Switches
+    document.getElementById('entryForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      studentInfo.name = document.getElementById('studentName').value.trim();
+      studentInfo.roll = document.getElementById('rollNumber').value.trim();
+      
+      document.getElementById('dispName').innerText = studentInfo.name;
+      document.getElementById('dispRoll').innerText = studentInfo.roll;
+
+      document.getElementById('phase1').classList.add('hidden');
+      document.getElementById('phase2').classList.remove('hidden');
+    });
+
+    document.getElementById('startTestBtn').addEventListener('click', function() {
+      document.getElementById('phase2').classList.add('hidden');
+      document.getElementById('phase3').classList.remove('hidden');
+      document.getElementById('phase3').classList.add('flex');
+      
+      initTestEngine();
+    });
+
+    // Language Toggle
+    document.getElementById('langToggle').addEventListener('click', function() {
+      currentLang = currentLang === 'hi' ? 'en' : 'hi';
+      this.innerText = currentLang === 'hi' ? 'हिंदी | Eng' : 'Eng | हिंदी';
+      renderQuestion(currentQIndex);
+    });
+
+    // Drawer Controls
+    document.getElementById('openDrawer').addEventListener('click', () => {
+      document.getElementById('paletteDrawer').classList.remove('drawer-closed');
+      document.getElementById('paletteDrawer').classList.add('drawer-open');
+    });
+    document.getElementById('closeDrawer').addEventListener('click', () => {
+      document.getElementById('paletteDrawer').classList.remove('drawer-open');
+      document.getElementById('paletteDrawer').classList.add('drawer-closed');
+    });
+
+    // Initialize Engine
+    function initTestEngine() {
+      buildPalette();
+      renderQuestion(0);
+      startTimers();
+    }
+
+    // Timers
+    function startTimers() {
+      globalTimerInterval = setInterval(() => {
+        if (globalTimeLeft <= 0) {
+          clearInterval(globalTimerInterval);
+          submitTest();
+          return;
+        }
+        globalTimeLeft--;
+        let h = Math.floor(globalTimeLeft / 3600).toString().padStart(2, '0');
+        let m = Math.floor((globalTimeLeft % 3600) / 60).toString().padStart(2, '0');
+        let s = (globalTimeLeft % 60).toString().padStart(2, '0');
+        document.getElementById('globalTimer').innerText = `${h}:${m}:${s}`;
+      }, 1000);
+
+      resetQTimer();
+    }
+
+    function resetQTimer() {
+      clearInterval(qTimerInterval);
+      qTimeLeft = 72;
+      updateQTimerDisplay();
+      qTimerInterval = setInterval(() => {
+        if (qTimeLeft > 0) {
+          qTimeLeft--;
+          updateQTimerDisplay();
+        }
+      }, 1000);
+    }
+
+    function updateQTimerDisplay() {
+      let m = Math.floor(qTimeLeft / 60).toString().padStart(2, '0');
+      let s = (qTimeLeft % 60).toString().padStart(2, '0');
+      document.getElementById('qTimer').innerText = `${m}:${s}`;
+    }
+
+    // Build Palette
+    function buildPalette() {
+      const grid = document.getElementById('paletteGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 63; i++) {
+        const btn = document.createElement('button');
+        btn.id = `palette-btn-${i}`;
+        btn.innerText = i + 1;
+        btn.className = `w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${getPaletteClass(userStatus[i])}`;
+        btn.addEventListener('click', () => {
+          saveCurrentStatusOnLeave();
+          currentQIndex = i;
+          renderQuestion(currentQIndex);
+          document.getElementById('paletteDrawer').classList.remove('drawer-open');
+          document.getElementById('paletteDrawer').classList.add('drawer-closed');
+        });
+        grid.appendChild(btn);
+      }
+    }
+
+    function getPaletteClass(status) {
+      switch(status) {
+        case 'answered': return 'bg-green-500 text-white border-green-600';
+        case 'not_answered': return 'bg-red-500 text-white border-red-600';
+        case 'review': return 'bg-purple-600 text-white border-purple-700';
+        default: return 'bg-gray-200 text-gray-700 border-gray-300';
+      }
+    }
+
+    function updatePaletteBtn(i) {
+      const btn = document.getElementById(`palette-btn-${i}`);
+      if(btn) {
+        btn.className = `w-10 h-10 rounded-full font-bold text-xs flex items-center justify-center border ${getPaletteClass(userStatus[i])}`;
+      }
+    }
+
+    // Render Question
+    function renderQuestion(index) {
+      resetQTimer();
+      if(userStatus[index] === 'unvisited') {
+        userStatus[index] = 'not_answered';
+        updatePaletteBtn(index);
+      }
+
+      const q = quizData[index];
+      document.getElementById('questionNum').innerText = `Question ${index + 1} of 63`;
+      document.getElementById('questionStatus').innerText = userStatus[index].toUpperCase().replace('_', ' ');
+
+      document.getElementById('questionText').innerHTML = currentLang === 'hi' ? q.qHi : q.qEn;
+
+      // Matrix table handler (if matched)
+      const matrixBox = document.getElementById('matrixContainer');
+      matrixBox.innerHTML = '';
+      matrixBox.classList.add('hidden');
+
+      // Options
+      const optionsBox = document.getElementById('optionsContainer');
+      optionsBox.innerHTML = '';
+
+      const opts = currentLang === 'hi' ? q.optionsHi : q.optionsEn;
+      const labels = ['A', 'B', 'C', 'D'];
+
+      opts.forEach((optStr, optIdx) => {
+        const isChecked = userAnswers[index] === optIdx;
+        const optEl = document.createElement('label');
+        optEl.className = `flex items-center p-3 border rounded-lg cursor-pointer transition hover:bg-blue-50 ${isChecked ? 'bg-blue-100 border-blue-600 font-semibold' : 'bg-white border-gray-300'}`;
+        optEl.innerHTML = `
+          <input type="radio" name="option" value="${optIdx}" ${isChecked ? 'checked' : ''} class="w-4 h-4 text-blue-600 focus:ring-blue-500 mr-3">
+          <span class="text-sm"><strong class="mr-1">${labels[optIdx]}.</strong> ${optStr}</span>
+        `;
+        optEl.addEventListener('click', () => {
+          userAnswers[index] = optIdx;
+          renderQuestion(index);
+        });
+        optionsBox.appendChild(optEl);
+      });
+
+      // Rerender MathJax
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    function saveCurrentStatusOnLeave() {
+      if(userAnswers[currentQIndex] !== null && userStatus[currentQIndex] !== 'review') {
+        userStatus[currentQIndex] = 'answered';
+      }
+      updatePaletteBtn(currentQIndex);
+    }
+
+    // Footer Control Events
+    document.getElementById('btnSaveNext').addEventListener('click', () => {
+      if(userAnswers[currentQIndex] !== null) {
+        userStatus[currentQIndex] = 'answered';
+      } else {
+        userStatus[currentQIndex] = 'not_answered';
+      }
+      updatePaletteBtn(currentQIndex);
+      if(currentQIndex < 62) {
+        currentQIndex++;
+        renderQuestion(currentQIndex);
+      }
+    });
+
+    document.getElementById('btnReview').addEventListener('click', () => {
+      userStatus[currentQIndex] = 'review';
+      updatePaletteBtn(currentQIndex);
+      if(currentQIndex < 62) {
+        currentQIndex++;
+        renderQuestion(currentQIndex);
+      }
+    });
+
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      saveCurrentStatusOnLeave();
+      if(currentQIndex > 0) {
+        currentQIndex--;
+        renderQuestion(currentQIndex);
+      }
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+      userAnswers[currentQIndex] = null;
+      userStatus[currentQIndex] = 'not_answered';
+      updatePaletteBtn(currentQIndex);
+      renderQuestion(currentQIndex);
+    });
+
+    document.getElementById('btnSubmit').addEventListener('click', () => {
+      if(confirm("Are you sure you want to submit the exam?")) {
+        submitTest();
+      }
+    });
+
+    // Submit & Result Evaluation
+    function submitTest() {
+      clearInterval(globalTimerInterval);
+      clearInterval(qTimerInterval);
+
+      document.getElementById('phase3').classList.add('hidden');
+      document.getElementById('phase3').classList.remove('flex');
+      document.getElementById('phase4').classList.remove('hidden');
+
+      let correctCount = 0;
+      let wrongCount = 0;
+
+      quizData.forEach((q, idx) => {
+        if(userAnswers[idx] === q.ans) {
+          correctCount++;
+        } else if(userAnswers[idx] !== null) {
+          wrongCount++;
+        }
+      });
+
+      const percentile = ((correctCount / 63) * 100).toFixed(1);
+
+      document.getElementById('resScore').innerText = `${correctCount} / 63`;
+      document.getElementById('resCorrect').innerText = correctCount;
+      document.getElementById('resWrong').innerText = wrongCount;
+      document.getElementById('resPercentile').innerText = `${percentile}%`;
+
+      renderSolutionsList();
+    }
+
+    // Render Solutions for Review & PDF Download
+    function renderSolutionsList() {
+      const container = document.getElementById('solutionContainer');
+      container.innerHTML = '';
+
+      quizData.forEach((q, idx) => {
+        const uAns = userAnswers[idx];
+        const isCorrect = uAns === q.ans;
+        const labels = ['A', 'B', 'C', 'D'];
+
+        const card = document.createElement('div');
+        card.className = `p-4 border rounded-lg ${isCorrect ? 'bg-green-50 border-green-200' : (uAns !== null ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200')}`;
+
+        let html = `
+          <div class="font-bold text-sm text-gray-900 mb-2">Q${idx + 1}. ${q.qHi}</div>
+          <div class="text-xs text-gray-600 italic mb-2">${q.qEn}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs mb-3">
+        `;
+
+        q.optionsHi.forEach((opt, oIdx) => {
+          let optBg = 'bg-white border-gray-200';
+          if(oIdx === q.ans) optBg = 'bg-green-200 border-green-500 font-bold';
+          else if(oIdx === uAns) optBg = 'bg-red-200 border-red-500 font-bold';
+
+          html += `
+            <div class="p-2 border rounded ${optBg}">
+              <strong>(${labels[oIdx]})</strong> ${opt} / <span class="text-gray-600">${q.optionsEn[oIdx]}</span>
+            </div>
+          `;
+        });
+
+        html += `
+          </div>
+          <div class="text-xs border-t pt-2 mt-2">
+            <span class="font-bold text-blue-900">Your Answer:</span> ${uAns !== null ? labels[uAns] : 'Not Attempted'} | 
+            <span class="font-bold text-green-700">Correct Answer:</span> ${labels[q.ans]}
+            <p class="mt-1 text-gray-800"><strong>Explanation (व्याख्या):</strong> ${q.expHi}</p>
+            <p class="text-gray-600 italic">${q.expEn}</p>
+          </div>
+        `;
+
+        card.innerHTML = html;
+        container.appendChild(card);
+      });
+
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    // PDF Generation Handler
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+      const element = document.getElementById('phase4');
+      const opt = {
+        margin:       0.3,
+        filename:     `${studentInfo.name}_Mock_Test_Result.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    });
+  </script>
+</body>
+</html>
